@@ -20,7 +20,7 @@ export function SearchBar({ onSubmit }) {
       <input
         className={s.input}
         type="text"
-        placeholder="Search a TV Show"
+        placeholder="Search a TV Show you may like"
         onKeyUp={submit}
         value={value}
         onChange={handleChange}
