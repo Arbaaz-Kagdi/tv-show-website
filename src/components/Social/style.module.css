@@ -1,0 +1,25 @@
+.flexContainer {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+}
+
+.flexMobileContainer {
+  display: flex;
+  gap: 20px;
+  justify-content: space-around;
+}
+
+.link {
+  font-size: 24px;
+}
+
+.mail {
+  width: 35px;
+  height: 35px;
+}
+
+.gpay {
+  width: 35px;
+  height: 35px;
+}
