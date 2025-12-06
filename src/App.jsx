@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { TVShowAPI } from "./api/tv-show";
+import { MovieAPI } from "./api/movie";
 import s from "./style.module.css";
 import { BACKDROP_BASE_URL } from "./config";
 import { TvShowDetail } from "./components/TvShowDetail/TvShowDetail.jsx";
@@ -10,26 +11,31 @@ import { SearchBar } from "./components/SearchBar/SearchBar.jsx";
 import { Analytics } from "@vercel/analytics/react";
 import { Social } from "./components/Social/Social.jsx";
 import { VideoPlayer } from "./components/VideoPlayer/VideoPlayer.jsx";
+import { ModeToggle } from "./components/ModeToggle/ModeToggle.jsx";
 
 export function App() {
   const [currentTVShow, setCurrentTVShow] = useState();
   const [recommendationList, setrecommendationList] = useState([]);
   const [currentTrailerId, setCurrentTrailerId] = useState(null);
+  const [currentMode, setCurrentMode] = useState("tv");
+  const [watchProviders, setWatchProviders] = useState(null);
 
-  async function fetchPopularFunc() {
+  async function fetchPopularFunc(mode = currentMode) {
     try {
-      const popularTVShowList = await TVShowAPI.fetchPopulars();
+      const api = mode === "tv" ? TVShowAPI : MovieAPI;
+      const popularTVShowList = await api.fetchPopulars();
       if (popularTVShowList.length > 0) {
         setCurrentTVShow(popularTVShowList[0]);
       }
     } catch (error) {
-      alert("Unable to Get TV Show");
+      alert("Unable to Get Popular Content");
     }
   }
 
-  async function fetchRecommendationFunc(tvShowId) {
+  async function fetchRecommendationFunc(tvShowId, mode = currentMode) {
     try {
-      const recommendationListResp = await TVShowAPI.fetchRecommendations(
+      const api = mode === "tv" ? TVShowAPI : MovieAPI;
+      const recommendationListResp = await api.fetchRecommendations(
         tvShowId
       );
       if (recommendationListResp.length > 0) {
@@ -42,7 +48,8 @@ export function App() {
 
   async function fetchByTitleFunc(title) {
     try {
-      const searchResponse = await TVShowAPI.fetchByTitle(title);
+      const api = currentMode === "tv" ? TVShowAPI : MovieAPI;
+      const searchResponse = await api.fetchByTitle(title);
       if (searchResponse.length > 0) {
         setCurrentTVShow(searchResponse[0]);
       }
@@ -54,7 +61,8 @@ export function App() {
   async function playTrailer() {
     if (currentTVShow) {
       try {
-        const videos = await TVShowAPI.fetchVideos(currentTVShow.id);
+        const api = currentMode === "tv" ? TVShowAPI : MovieAPI;
+        const videos = await api.fetchVideos(currentTVShow.id);
         const trailer = videos.find(
           (video) => video.type === "Trailer" && video.site === "YouTube"
         );
@@ -69,13 +77,25 @@ export function App() {
     }
   }
 
+  async function fetchWatchProvidersFunc(tvShowId, mode = currentMode) {
+    try {
+      const api = mode === "tv" ? TVShowAPI : MovieAPI;
+      const providers = await api.fetchWatchProviders(tvShowId);
+      setWatchProviders(providers);
+    } catch (error) {
+      console.error("Unable to fetch watch providers:", error);
+      setWatchProviders(null);
+    }
+  }
+
   useEffect(() => {
-    fetchPopularFunc();
-  }, []);
+    fetchPopularFunc(currentMode);
+  }, [currentMode]);
 
   useEffect(() => {
     if (currentTVShow) {
       fetchRecommendationFunc(currentTVShow.id);
+      fetchWatchProvidersFunc(currentTVShow.id);
     }
   }, [currentTVShow]);
 
@@ -95,17 +115,18 @@ export function App() {
       <Analytics></Analytics>
       <div className={s.header}>
         <div className="row">
-          <div className="col-4">
+          <div className="col-12 col-lg-2 mb-3 mb-lg-0">
             <Logo
               img={logoImg}
               title={"Watowatch"}
               subtitle={"Find a show you may like"}
             ></Logo>
           </div>
-          <div className="col-md-12 col-lg-4">
-            <SearchBar onSubmit={fetchByTitleFunc}></SearchBar>
+          <div className="col-12 col-lg-8 d-flex flex-column flex-lg-row justify-content-center align-items-center gap-3">
+            <ModeToggle mode={currentMode} onToggle={setCurrentMode} />
+            <SearchBar onSubmit={fetchByTitleFunc} mode={currentMode}></SearchBar>
           </div>
-          <div className="col-md-12 col-lg-4">
+          <div className="col-12 col-lg-2">
             <Social></Social>
           </div>
         </div>
@@ -115,6 +136,7 @@ export function App() {
           <TvShowDetail
             tvShow={currentTVShow}
             onWatchTrailer={playTrailer}
+            watchProviders={watchProviders}
           ></TvShowDetail>
         )}
       </div>
